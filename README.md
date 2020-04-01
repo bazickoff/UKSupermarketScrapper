@@ -1,2 +1,2 @@
 # UKSupermarketScrapper
-UK supermarket Scrapping app
+UK supermarket Scrapping Project

@@ -1,47 +1,62 @@
+# Develop by Vincent Zhang and GitRepo Owner
+
 import requests
-import re
 from requests import get
 from bs4 import BeautifulSoup
 
+# Varaiable Declare：
+url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
+LocList = []
 # checker is the controller to decide the starting point for scrapping
-r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html')
-r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html', cookies= r.cookies)
-soup = BeautifulSoup(r.text, 'html.parser')
-LocList=[]
-codeList=[]
-shop_detail_info_list =[]
-checker = None
-for link in soup.select('p a[href]'):
-    if link.text=='Abergavenny':
-        checker= True
-    if checker:
-        LocList.append(link.text)
-        codeList.append(link['href'][-8:-5])
-print(codeList)
-
-# detail match of each store
-
-match_str = 'Please enter some search text or select a branch from the dropdown list.'
-for index in codeList:
-    r = get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+index+'.html')
-    r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+index+'.html', cookies= r.cookies)
+def getShopLocationAndCodeList(url):
+    r = requests.get(url)
+    r = requests.get(url, cookies= r.cookies)
     soup = BeautifulSoup(r.text, 'html.parser')
-    parse_target = []
-    for link in soup.select('p'):
-        parse_target.append(link.text)
-    for i in range(len(parse_target)):
-        if re.match(match_str,parse_target[i]):
-            shop_detail_info_list.append(parse_target[i+1])
+    checker = None
+    indexList = []
 
-import csv
+    for link in soup.select('p a[href]'):
+        if link.text=='Abergavenny':
+            checker= True
+    # Note: Barry Branch is closed, the html content still exists but page is blank
+        if link.text == 'Barry':
+            continue
+    # This is because the waitrose website are not well formatted
+    # some of its page has suffix as html.html instead of html
+        if link.text == 'Greenwich' or link.text == 'Oakgrove-Milton Keynes' or link.text == 'Wells':
+            LocList.append(link.text)
+            indexList.append(link['href'][-13:-5])
+            continue
+        if checker:
+            LocList.append(link.text)
+            indexList.append(link['href'][-8:-5])
+    return indexList
 
-with open("../data/out.csv", "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerows(shop_detail_info_list)
 
-import pandas as pd
-import numpy as np
-waitrose_df = pd.DataFrame(np.column_stack([LocList, codeList]),
-                               columns=['Location', 'codeList'])
-waitrose_df.to_csv('waitrose_data_raw.csv',encoding='utf-8')
-waitrose_df.head()
+def getDetailedShopInfo(shopIndex):
+    r = get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+shopIndex+'.html')
+    r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+shopIndex+'.html', cookies= r.cookies)
+    soup= BeautifulSoup(r.text, 'html.parser')
+    shopDetail = soup.find("div", class_="col branch-details").select('p')
+    return shopDetail
+
+def ListProcesser(shopDetail):
+    SingleListFinal=[]
+    returnString=' '.join(map(str, shopDetail))
+    replacedList=returnString.replace('<p>','').replace('\r','').replace('\n','').replace('\t','').replace('</p >','').replace('<br/>',';')
+    newList = replacedList.strip().split(";")[0:-1]
+    for i in newList:
+        j = i.strip()
+        SingleListFinal.append(j)
+    return SingleListFinal
+
+def json_converter(singleList):
+
+
+if __name__ == '__main__':
+    indexList = getShopLocationAndCodeList(url)
+    for index in indexList:
+        shopDetail = getDetailedShopInfo(index)
+        print(ListProcesser(shopDetail))
+
+
