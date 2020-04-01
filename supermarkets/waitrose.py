@@ -4,7 +4,7 @@ import requests
 from requests import get
 from bs4 import BeautifulSoup
 
-# Varaiable Declare：
+# Varaiable Declaration：
 url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
 LocList = []
 # checker is the controller to decide the starting point for scrapping
@@ -49,9 +49,6 @@ def ListProcesser(shopDetail):
         j = i.strip()
         SingleListFinal.append(j)
     return SingleListFinal
-
-def json_converter(singleList):
-
 
 if __name__ == '__main__':
     indexList = getShopLocationAndCodeList(url)
