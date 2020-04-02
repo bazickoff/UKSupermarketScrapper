@@ -68,11 +68,12 @@ def jsonConverter(SingleShopDetail,id, shopName):
     dict = {
         'id': id,
         'sname':shopName,
+        'address': SingleShopDetail[0],
         'postcode': SingleShopDetail[-2],
         'longitude':geolocation['longitude'],
         'latitude': geolocation['latitude'],
         'tel': SingleShopDetail[-1],
-        'address':SingleShopDetail[-3]
+
     }
     return dict
 
@@ -82,12 +83,20 @@ if __name__ == '__main__':
     url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
     LocList = []
     # shop id and shop name
-    id = 1
+    id = 0
     shopname = 'waitrose'
+    waitrose_dict ={'items': []}
     indexList = getShopLocationAndCodeList(url)
     for index in indexList:
+        id = id + 1
+        sname = shopname + '_' + str(id)
         shopDetail = getDetailedShopInfo(index)
         SingleShopDeatil = ListProcesser(shopDetail)
-        print(jsonConverter(SingleShopDeatil,1,shopname))
+        print(SingleShopDeatil)
+        waitrose_dict['items'].append(jsonConverter(SingleShopDeatil,id,sname))
+
+    with open('../data/waitrose.json', 'w') as json_file:
+        json.dump(waitrose_dict, json_file)
+
 
 
