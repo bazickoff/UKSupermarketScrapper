@@ -1,17 +1,15 @@
 # Develop by Vincent Zhang and GitRepo Owner
 
+import json
 import requests
 from requests import get
 from bs4 import BeautifulSoup
 
-# Varaiable Declaration：
-url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
-LocList = []
-# checker is the controller to decide the starting point for scrapping
 def getShopLocationAndCodeList(url):
     r = requests.get(url)
     r = requests.get(url, cookies= r.cookies)
     soup = BeautifulSoup(r.text, 'html.parser')
+    # checker is the controller to decide the starting point for scrapping
     checker = None
     indexList = []
 
@@ -26,6 +24,11 @@ def getShopLocationAndCodeList(url):
         if link.text == 'Greenwich' or link.text == 'Oakgrove-Milton Keynes' or link.text == 'Wells':
             LocList.append(link.text)
             indexList.append(link['href'][-13:-5])
+            continue
+    # The Peterborough branch is a bit weired the web link is code so have to manually add it
+        if link.text == 'Peterborough':
+            LocList.append(link.text)
+            indexList.append('531')
             continue
         if checker:
             LocList.append(link.text)
@@ -50,10 +53,41 @@ def ListProcesser(shopDetail):
         SingleListFinal.append(j)
     return SingleListFinal
 
+# get shop's Geolocation, make it easy for later visualizaiton for GIS
+def getGeoLocation(postcode):
+    geolocation = {'longitude': float, 'latitude': float}
+    data = requests.get('http://api.getthedata.com/postcode/' + postcode)
+    geolocation['longitude'] =data.json()['data']['longitude']
+    geolocation['latitude'] = data.json()['data']['latitude']
+    return geolocation
+
+# Convert a single shop Deatil into a dictionary format
+def jsonConverter(SingleShopDetail,id, shopName):
+    geolocation =getGeoLocation(SingleShopDetail[-2])
+    #create an empty dict
+    dict = {
+        'id': id,
+        'sname':shopName,
+        'postcode': SingleShopDetail[-2],
+        'longitude':geolocation['longitude'],
+        'latitude': geolocation['latitude'],
+        'tel': SingleShopDetail[-1],
+        'address':SingleShopDetail[-3]
+    }
+    return dict
+
+
 if __name__ == '__main__':
+    # Varaiable Declaration：
+    url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
+    LocList = []
+    # shop id and shop name
+    id = 1
+    shopname = 'waitrose'
     indexList = getShopLocationAndCodeList(url)
     for index in indexList:
         shopDetail = getDetailedShopInfo(index)
-        print(ListProcesser(shopDetail))
+        SingleShopDeatil = ListProcesser(shopDetail)
+        print(jsonConverter(SingleShopDeatil,1,shopname))
 
 
