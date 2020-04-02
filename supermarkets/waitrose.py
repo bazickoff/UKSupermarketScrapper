@@ -1,4 +1,4 @@
-# Develop by Vincent Zhang and GitRepo Owner
+# Developed by Vincent Zhang and Shu Wei
 
 import json
 import requests
