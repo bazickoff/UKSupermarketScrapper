@@ -1,7 +1,8 @@
-# Develop by Vincent Zhang and GitRepo Owner
+# Developed by Vincent Zhang and Shu Wei
 
 import json
 import requests
+from requests import get
 import utils
 from bs4 import BeautifulSoup
 
