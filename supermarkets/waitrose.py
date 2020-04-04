@@ -2,8 +2,9 @@
 
 import json
 import requests
-from requests import get
+import utils
 from bs4 import BeautifulSoup
+
 
 def getShopLocationAndCodeList(url):
     r = requests.get(url)
@@ -12,7 +13,7 @@ def getShopLocationAndCodeList(url):
     # checker is the controller to decide the starting point for scrapping
     checker = None
     indexList = []
-
+    LocList = []
     for link in soup.select('p a[href]'):
         if link.text=='Abergavenny':
             checker= True
@@ -33,11 +34,11 @@ def getShopLocationAndCodeList(url):
         if checker:
             LocList.append(link.text)
             indexList.append(link['href'][-8:-5])
-    return indexList
+    return indexList, LocList
 
 
 def getDetailedShopInfo(shopIndex):
-    r = get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+shopIndex+'.html')
+    r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+shopIndex+'.html')
     r = requests.get('https://www.waitrose.com/content/waitrose/en/bf_home/bf/'+shopIndex+'.html', cookies= r.cookies)
     soup= BeautifulSoup(r.text, 'html.parser')
     shopDetail = soup.find("div", class_="col branch-details").select('p')
@@ -53,17 +54,9 @@ def ListProcesser(shopDetail):
         SingleListFinal.append(j)
     return SingleListFinal
 
-# get shop's Geolocation, make it easy for later visualizaiton for GIS
-def getGeoLocation(postcode):
-    geolocation = {'longitude': float, 'latitude': float}
-    data = requests.get('http://api.getthedata.com/postcode/' + postcode)
-    geolocation['longitude'] =data.json()['data']['longitude']
-    geolocation['latitude'] = data.json()['data']['latitude']
-    return geolocation
-
 # Convert a single shop Deatil into a dictionary format
 def jsonConverter(SingleShopDetail,id, shopName):
-    geolocation =getGeoLocation(SingleShopDetail[-2])
+    geolocation =utils.getGeoLocation(SingleShopDetail[-2])
     #create an empty dict
     dict = {
         'id': id,
@@ -81,22 +74,21 @@ def jsonConverter(SingleShopDetail,id, shopName):
 if __name__ == '__main__':
     # Varaiable Declaration：
     url = 'https://www.waitrose.com/content/waitrose/en/bf_home/branch_finder_a-z.html'
-    LocList = []
     # shop id and shop name
     id = 0
-    shopname = 'waitrose'
+    shopname = 'Waitrose & Partners'
     waitrose_dict ={'items': []}
-    indexList = getShopLocationAndCodeList(url)
-    for index in indexList:
+    indexList = (getShopLocationAndCodeList(url))[0]
+    locList = (getShopLocationAndCodeList(url))[1]
+    for index in range(len(indexList)):
         id = id + 1
-        sname = shopname + '_' + str(id)
-        shopDetail = getDetailedShopInfo(index)
+        sname = shopname + ' ' + locList[index]
+        shopDetail = getDetailedShopInfo(indexList[index])
         SingleShopDeatil = ListProcesser(shopDetail)
         print(SingleShopDeatil)
         waitrose_dict['items'].append(jsonConverter(SingleShopDeatil,id,sname))
 
     with open('../data/waitrose.json', 'w') as json_file:
         json.dump(waitrose_dict, json_file)
-
 
 
