@@ -1,3 +1,8 @@
+import json
+import requests
+import utils
+from requests import get
+
 # get shop's Geolocation, make it easy for later visualizaiton for GIS
 def getGeoLocation(postcode):
     geolocation = {'longitude': float, 'latitude': float}
